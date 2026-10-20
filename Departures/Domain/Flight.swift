@@ -58,9 +58,12 @@ struct Flight: Codable, Identifiable, Hashable, Sendable {
     let scheduled: Date
     let estimated: Date?
     let gate: String
+    let previousGate: String?
     let terminal: String
     let aircraft: String
     let status: FlightStatus
+
+    var gateChanged: Bool { previousGate != nil }
 
     var displayTime: Date { estimated ?? scheduled }
 

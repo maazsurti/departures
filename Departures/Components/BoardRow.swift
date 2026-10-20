@@ -35,9 +35,17 @@ struct BoardRow: View {
                     .font(.system(size: 19, weight: .semibold, design: .rounded))
                     .foregroundStyle(Theme.primary)
 
-                Text("Gate \(flight.gate) · \(flight.terminal)")
-                    .font(.system(size: 12, weight: .regular, design: .rounded))
-                    .foregroundStyle(Theme.secondary)
+                HStack(spacing: 6) {
+                    Text("Gate \(flight.gate) · \(flight.terminal)")
+                        .font(.system(size: 12, weight: .regular, design: .rounded))
+                        .foregroundStyle(Theme.secondary)
+
+                    if let previous = flight.previousGate {
+                        Text("was \(previous)")
+                            .font(.system(size: 11, weight: .semibold, design: .rounded))
+                            .foregroundStyle(Theme.amber)
+                    }
+                }
             }
 
             Spacer(minLength: 8)
@@ -84,6 +92,7 @@ enum PreviewData {
                 scheduled: .now.addingTimeInterval(3000),
                 estimated: nil,
                 gate: "12",
+                previousGate: nil,
                 terminal: "International",
                 aircraft: "Boeing 787-9",
                 status: .boarding
@@ -96,7 +105,8 @@ enum PreviewData {
                 destination: .zqn,
                 scheduled: .now.addingTimeInterval(5400),
                 estimated: .now.addingTimeInterval(7200),
-                gate: "34",
+                gate: "41",
+                previousGate: "34",
                 terminal: "Domestic",
                 aircraft: "Airbus A320neo",
                 status: .delayed

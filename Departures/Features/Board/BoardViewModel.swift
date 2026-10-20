@@ -68,8 +68,12 @@ final class BoardViewModel {
         } catch is CancellationError {
             return
         } catch {
-            errorMessage = "Could not reach the board. Showing what we last had."
-            isShowingCachedData = true
+            if let cached = await repository.cachedSnapshot() {
+                flights = cached.flights
+                lastUpdated = cached.savedAt
+                isShowingCachedData = true
+            }
+            errorMessage = "Could not reach the board. Showing the last saved update."
         }
     }
 }

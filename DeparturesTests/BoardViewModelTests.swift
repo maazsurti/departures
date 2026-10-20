@@ -7,10 +7,15 @@ private enum StubError: Error { case offline }
 private struct StubRepository: FlightRepository {
     let flights: [Flight]
     var fails = false
+    var cached: CachedBoard?
 
     func departures() async throws -> [Flight] {
         if fails { throw StubError.offline }
         return flights
+    }
+
+    func cachedSnapshot() async -> CachedBoard? {
+        cached
     }
 }
 
@@ -18,6 +23,7 @@ private func makeFlight(
     number: String,
     destination: Airport = .syd,
     gate: String = "12",
+    previousGate: String? = nil,
     status: FlightStatus = .onTime,
     delayMinutes: Int = 0
 ) -> Flight {
@@ -31,6 +37,7 @@ private func makeFlight(
         scheduled: scheduled,
         estimated: delayMinutes > 0 ? scheduled.addingTimeInterval(TimeInterval(delayMinutes * 60)) : nil,
         gate: gate,
+        previousGate: previousGate,
         terminal: "Domestic",
         aircraft: "A320",
         status: status
@@ -105,8 +112,31 @@ struct BoardViewModelTests {
         await model.load()
 
         #expect(model.errorMessage != nil)
-        #expect(model.isShowingCachedData)
         #expect(model.flights.isEmpty)
+    }
+
+    @Test func failureFallsBackToCachedSnapshotAndSaysSo() async {
+        let savedAt = Date(timeIntervalSince1970: 1_800_000_000)
+        let cached = CachedBoard(flights: [makeFlight(number: "NZ 1")], savedAt: savedAt)
+        let model = BoardViewModel(
+            repository: StubRepository(flights: [], fails: true, cached: cached)
+        )
+
+        await model.load()
+
+        #expect(model.flights.count == 1)
+        #expect(model.isShowingCachedData)
+        #expect(model.lastUpdated == savedAt)
+        #expect(model.errorMessage != nil)
+    }
+
+    @Test func gateChangeIsVisibleOnTheModel() {
+        let changed = makeFlight(number: "NZ 1", gate: "41", previousGate: "34")
+        let unchanged = makeFlight(number: "NZ 2")
+
+        #expect(changed.gateChanged)
+        #expect(changed.previousGate == "34")
+        #expect(unchanged.gateChanged == false)
     }
 }
 

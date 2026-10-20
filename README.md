@@ -2,9 +2,9 @@
 
 A SwiftUI departure board for Auckland Airport. I built it around the part of a mobile app that usually gets the least attention: the loading state, the failed request, the stale snapshot, the delayed flight, and the gate that moves while you are walking to it.
 
-| Board | Delayed flight | In the air |
-| --- | --- | --- |
-| <img src="docs/screenshots/board.png" width="260"> | <img src="docs/screenshots/detail-delayed.png" width="260"> | <img src="docs/screenshots/detail-inflight.png" width="260"> |
+| Board | Delayed, gate changed | In the air | Offline, cached |
+| --- | --- | --- | --- |
+| <img src="docs/screenshots/board.png" width="200"> | <img src="docs/screenshots/detail-delayed.png" width="200"> | <img src="docs/screenshots/detail-inflight.png" width="200"> | <img src="docs/screenshots/cached-offline.png" width="200"> |
 
 ## What it does
 
@@ -12,7 +12,8 @@ A SwiftUI departure board for Auckland Airport. I built it around the part of a 
 - Filters for all departures or delayed flights only
 - Flight detail with route progress, gate, terminal, aircraft, boarding time, and a three-step timeline
 - Delayed flights keep the scheduled time visible, struck through, next to the new one
-- Cached data is labelled "Cached" with the time it was saved. The app never presents old data as live
+- A changed gate shows the new gate, the old one, and a banner on the detail screen
+- When the request fails, the board falls back to the last saved snapshot, shows an error, and labels the data "Cached" with the time it was saved. It never presents old data as live
 - Deep link: `departures://flight/NZ%20612`
 
 ## Architecture
@@ -20,6 +21,7 @@ A SwiftUI departure board for Auckland Airport. I built it around the part of a 
 - SwiftUI with `@Observable` view models, Swift 6 language mode, strict concurrency
 - `FlightRepository` protocol in front of the data source, so the view model has no idea whether data comes from a network or a stub
 - `DemoFlightService` is an actor with an artificial 450 ms delay, and writes a JSON snapshot to the caches directory
+- `SIMULATE_OFFLINE=1` forces the request to fail so the cached path can be exercised without turning off Wi-Fi
 - Delay in minutes, status labels, and route progress are derived from the model rather than stored, so a stale snapshot cannot claim an aircraft is further along than it is
 - No third-party dependencies
 
@@ -57,12 +59,14 @@ xcodebuild test \
 
 ## Tests
 
-Nine tests in two suites, covering:
+Eleven tests in two suites, covering:
 
 - filter behaviour, including cancelled flights under "Delayed"
 - search across flight number, city, and gate, case-insensitively
 - whitespace-only search not filtering the board
 - repository failure surfacing a message while leaving the board usable
+- failure falling back to the cached snapshot and keeping its original timestamp
+- gate change detection on the model
 - delay arithmetic and route progress
 
 ## Decisions
@@ -78,5 +82,5 @@ Nine tests in two suites, covering:
 ## Limitations
 
 - Demo data only. There is no live API, and the flight list is fixed apart from relative times.
-- The gate-change simulation exists in `DemoFlightService` but is not wired to a control in the UI.
+- The gate change is fixed in the fixture. There is no control in the UI to trigger one live.
 - No app icon, localisation, or accessibility audit beyond labels on the board rows.

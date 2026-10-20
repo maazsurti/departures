@@ -18,7 +18,7 @@ struct FlightDetailView: View {
             ScrollView {
                 VStack(spacing: 22) {
                     routeHeader
-                    if flight.delayMinutes > 0 { delayBanner }
+                    if flight.delayMinutes > 0 || flight.gateChanged { changesBanner }
                     progressCard
                     detailsGrid
                     timeline
@@ -91,19 +91,22 @@ struct FlightDetailView: View {
         .accessibilityElement(children: .combine)
     }
 
-    private var delayBanner: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(Theme.amber)
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Departure moved")
-                    .font(.system(size: 13, weight: .bold, design: .rounded))
-                    .foregroundStyle(Theme.primary)
-                Text("Now \(timeText), \(flight.delayMinutes) minutes later than scheduled.")
-                    .font(.system(size: 12, design: .rounded))
-                    .foregroundStyle(Theme.secondary)
+    private var changesBanner: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if flight.delayMinutes > 0 {
+                changeRow(
+                    icon: "clock.badge.exclamationmark",
+                    title: "Departure moved",
+                    detail: "Now \(timeText), \(flight.delayMinutes) minutes later than scheduled."
+                )
             }
-            Spacer()
+            if let previous = flight.previousGate {
+                changeRow(
+                    icon: "arrow.triangle.swap",
+                    title: "Gate changed",
+                    detail: "Now gate \(flight.gate), was \(previous). Same terminal."
+                )
+            }
         }
         .padding(14)
         .background(Theme.amber.opacity(0.10), in: .rect(cornerRadius: 16))
@@ -111,6 +114,26 @@ struct FlightDetailView: View {
             RoundedRectangle(cornerRadius: 16).stroke(Theme.amber.opacity(0.3), lineWidth: 1)
         )
         .transition(.move(edge: .top).combined(with: .opacity))
+    }
+
+    private func changeRow(icon: String, title: String, detail: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: icon)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Theme.amber)
+                .frame(width: 16)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .foregroundStyle(Theme.primary)
+                Text(detail)
+                    .font(.system(size: 12, design: .rounded))
+                    .foregroundStyle(Theme.secondary)
+            }
+
+            Spacer(minLength: 0)
+        }
     }
 
     private var progressCard: some View {

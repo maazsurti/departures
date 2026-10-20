@@ -3,6 +3,12 @@ import Foundation
 /// The only thing the UI layer is allowed to know about the network.
 protocol FlightRepository: Sendable {
     func departures() async throws -> [Flight]
+    func cachedSnapshot() async -> CachedBoard?
+}
+
+struct CachedBoard: Sendable {
+    let flights: [Flight]
+    let savedAt: Date
 }
 
 /// Demo implementation: deterministic data, an artificial network delay, and a
@@ -33,6 +39,12 @@ actor DemoFlightService: FlightRepository {
     }
 
     func departures() async throws -> [Flight] {
+        #if DEBUG
+        if ProcessInfo.processInfo.environment["SIMULATE_OFFLINE"] == "1" {
+            throw URLError(.notConnectedToInternet)
+        }
+        #endif
+
         try await Task.sleep(for: latency)
 
         let flights = makeFlights(gateChanged: gateChanged)
@@ -47,9 +59,16 @@ actor DemoFlightService: FlightRepository {
         return gateChanged
     }
 
-    func cachedSnapshot() -> Snapshot? {
+    private func loadSnapshot() -> Snapshot? {
         guard let store, let data = try? Data(contentsOf: store) else { return nil }
-        return try? JSONDecoder().decode(Snapshot.self, from: data)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try? decoder.decode(Snapshot.self, from: data)
+    }
+
+    func cachedSnapshot() async -> CachedBoard? {
+        guard let snapshot = loadSnapshot() else { return nil }
+        return CachedBoard(flights: snapshot.flights, savedAt: snapshot.savedAt)
     }
 
     private func write(_ snapshot: Snapshot) {
@@ -81,6 +100,7 @@ actor DemoFlightService: FlightRepository {
                 scheduled: at(55),
                 estimated: nil,
                 gate: gateChanged ? "17" : "12",
+                previousGate: gateChanged ? "12" : nil,
                 terminal: "International",
                 aircraft: "Boeing 787-9",
                 status: .boarding
@@ -93,7 +113,8 @@ actor DemoFlightService: FlightRepository {
                 destination: .zqn,
                 scheduled: at(95),
                 estimated: at(125),
-                gate: "34",
+                gate: "41",
+                previousGate: "34",
                 terminal: "Domestic",
                 aircraft: "Airbus A320neo",
                 status: .delayed
@@ -107,6 +128,7 @@ actor DemoFlightService: FlightRepository {
                 scheduled: at(130),
                 estimated: nil,
                 gate: "22",
+                previousGate: nil,
                 terminal: "Domestic",
                 aircraft: "ATR 72-600",
                 status: .onTime
@@ -120,6 +142,7 @@ actor DemoFlightService: FlightRepository {
                 scheduled: at(160),
                 estimated: nil,
                 gate: "39",
+                previousGate: nil,
                 terminal: "Domestic",
                 aircraft: "Airbus A321neo",
                 status: .onTime
@@ -133,6 +156,7 @@ actor DemoFlightService: FlightRepository {
                 scheduled: at(190),
                 estimated: at(215),
                 gate: "6",
+                previousGate: nil,
                 terminal: "International",
                 aircraft: "Boeing 737-800",
                 status: .delayed
@@ -146,6 +170,7 @@ actor DemoFlightService: FlightRepository {
                 scheduled: at(-40),
                 estimated: nil,
                 gate: "9",
+                previousGate: nil,
                 terminal: "International",
                 aircraft: "Boeing 787-9",
                 status: .departed

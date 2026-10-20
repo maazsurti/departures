@@ -16,6 +16,10 @@ struct BoardView: View {
                         filters
                         searchField
 
+                        if let message = model.errorMessage {
+                            errorBanner(message)
+                        }
+
                         if model.isLoading {
                             loadingRows
                         } else if model.visibleFlights.isEmpty {
@@ -155,6 +159,20 @@ struct BoardView: View {
                 .stroke(Theme.stroke, lineWidth: 1)
         )
         .padding(.bottom, 6)
+    }
+
+    private func errorBanner(_ message: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "wifi.exclamationmark")
+                .foregroundStyle(Theme.amber)
+            Text(message)
+                .font(.system(size: 12, design: .rounded))
+                .foregroundStyle(Theme.primary)
+            Spacer(minLength: 0)
+        }
+        .padding(12)
+        .background(Theme.amber.opacity(0.10), in: .rect(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.amber.opacity(0.28), lineWidth: 1))
     }
 
     private var loadingRows: some View {
