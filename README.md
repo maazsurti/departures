@@ -42,7 +42,7 @@ The app is small on purpose, but it is a whole app: a dashboard, a board, saved 
 
 - SwiftUI with `@Observable` view models, Swift 6 language mode, strict concurrency
 - `FlightRepository` protocol in front of the data source, so the view model has no idea whether data comes from a network or a stub
-- `DemoFlightService` is an actor with an artificial 450 ms delay, a disk snapshot, and explicit demo controls for offline and gate changes
+- `DemoFlightService` is an actor with an artificial 450 ms delay, a disk snapshot, and explicit demo controls for offline and gate changes. `SIMULATE_OFFLINE=1` forces the failure path for QA.
 - One service instance is shared by the whole app, so Settings acts on the board the traveller is looking at
 - `Router` owns tab selection so dashboard actions can hand off to the right section
 - Delay in minutes, status labels, route progress, attention count, and change summaries are derived from the model rather than stored, so a stale snapshot cannot claim an aircraft is further along than it is
