@@ -81,8 +81,7 @@ final class AppFlowUITests: XCTestCase {
         openSettings()
         let offline = app.switches["offline-toggle"].firstMatch
         XCTAssertTrue(offline.waitForExistence(timeout: 10))
-        offline.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)).tap()
-        XCTAssertEqual(offline.value as? String, "1", "Offline switch should be on")
+        setSwitch(offline, on: true)
         capture("settings")
         app.buttons["settings-done"].tap()
 
@@ -97,9 +96,9 @@ final class AppFlowUITests: XCTestCase {
         // Back online.
         tapTab("Today")
         openSettings()
-        app.switches["offline-toggle"].firstMatch
-            .coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5))
-            .tap()
+        let offlineToggle = app.switches["offline-toggle"].firstMatch
+        waitForSwitch(offlineToggle, value: "1")
+        setSwitch(offlineToggle, on: false)
         app.buttons["settings-done"].tap()
         tapTab("Board")
         popToBoardRoot()
@@ -205,6 +204,38 @@ final class AppFlowUITests: XCTestCase {
         let gear = app.buttons["open-settings"].firstMatch
         XCTAssertTrue(gear.waitForExistence(timeout: 10), "Settings gear should be on Today")
         gear.tap()
+        XCTAssertTrue(
+            app.navigationBars["Settings"].waitForExistence(timeout: 10),
+            "Settings sheet should present"
+        )
+    }
+
+    /// The sheet reads the service state asynchronously, so wait for it to
+    /// settle before flipping the switch.
+    @MainActor
+    private func waitForSwitch(_ toggle: XCUIElement, value: String, timeout: TimeInterval = 5) {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if (toggle.value as? String) == value { return }
+            Thread.sleep(forTimeInterval: 0.2)
+        }
+    }
+
+    /// The sheet can still be animating when the switch first exists, so tap,
+    /// re-read, and retry before failing.
+    @MainActor
+    private func setSwitch(_ toggle: XCUIElement, on: Bool) {
+        let target = on ? "1" : "0"
+
+        for _ in 0..<4 {
+            if (toggle.value as? String) == target { return }
+
+            toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)).tap()
+            Thread.sleep(forTimeInterval: 0.4)
+            if (toggle.value as? String) == target { return }
+        }
+
+        XCTAssertEqual(toggle.value as? String, target, "Switch did not reach \(target)")
     }
 
     @MainActor
