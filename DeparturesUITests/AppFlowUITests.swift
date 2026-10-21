@@ -9,6 +9,7 @@ import XCTest
 final class AppFlowUITests: XCTestCase {
     private var app: XCUIApplication!
 
+    @MainActor
     private var isPad: Bool {
         UIDevice.current.userInterfaceIdiom == .pad
     }
