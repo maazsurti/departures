@@ -2,17 +2,12 @@ import XCTest
 
 /// End-to-end walk through the shipped app. The same suite runs on iPhone and
 /// iPad so the compact stack and the regular-width split view are both checked.
-@MainActor
+///
+/// The test methods are main-actor isolated instead of the whole class: XCTest's
+/// `setUpWithError` is nonisolated on older toolchains, and overriding it from a
+/// `@MainActor` class fails to compile under Swift 6.
 final class AppFlowUITests: XCTestCase {
     private var app: XCUIApplication!
-
-    override func setUpWithError() throws {
-        continueAfterFailure = false
-        app = XCUIApplication()
-        app.launchArguments = ["-resetDemoState"]
-        app.launchEnvironment = ["OPEN_TAB": "today"]
-        app.launch()
-    }
 
     private var isPad: Bool {
         UIDevice.current.userInterfaceIdiom == .pad
@@ -20,7 +15,11 @@ final class AppFlowUITests: XCTestCase {
 
     // MARK: - Main flow
 
+    @MainActor
     func testTodayToDetailSavedChangesAndOffline() throws {
+        continueAfterFailure = false
+        launch()
+
         XCTAssertTrue(app.staticTexts["Auckland"].waitForExistence(timeout: 15))
         capture("today")
 
@@ -123,7 +122,11 @@ final class AppFlowUITests: XCTestCase {
 
     // MARK: - Deep link
 
+    @MainActor
     func testDeepLinkOpensFlight() throws {
+        continueAfterFailure = false
+        launch()
+
         XCTAssertTrue(app.staticTexts["Auckland"].waitForExistence(timeout: 15))
 
         XCUIDevice.shared.system.open(URL(string: "departures://flight/NZ%20612")!)
@@ -142,7 +145,11 @@ final class AppFlowUITests: XCTestCase {
 
     // MARK: - Rotation
 
+    @MainActor
     func testRotationKeepsContent() throws {
+        continueAfterFailure = false
+        launch()
+
         XCTAssertTrue(app.staticTexts["Auckland"].waitForExistence(timeout: 15))
         tapTab("Board")
         XCTAssertTrue(app.buttons["airport-picker"].waitForExistence(timeout: 10))
@@ -161,6 +168,15 @@ final class AppFlowUITests: XCTestCase {
 
     // MARK: - Helpers
 
+    @MainActor
+    private func launch() {
+        app = XCUIApplication()
+        app.launchArguments = ["-resetDemoState"]
+        app.launchEnvironment = ["OPEN_TAB": "today"]
+        app.launch()
+    }
+
+    @MainActor
     private func tapTab(_ label: String) {
         let buttons = app.buttons.matching(NSPredicate(format: "label == %@", label))
         XCTAssertTrue(buttons.firstMatch.waitForExistence(timeout: 10), "Missing tab \(label)")
@@ -173,6 +189,7 @@ final class AppFlowUITests: XCTestCase {
         }
     }
 
+    @MainActor
     private func popToBoardRoot() {
         for _ in 0..<3 {
             let back = app.navigationBars.buttons["Back"]
@@ -182,12 +199,14 @@ final class AppFlowUITests: XCTestCase {
         }
     }
 
+    @MainActor
     private func openSettings() {
         let gear = app.buttons["open-settings"].firstMatch
         XCTAssertTrue(gear.waitForExistence(timeout: 10), "Settings gear should be on Today")
         gear.tap()
     }
 
+    @MainActor
     private func capture(_ name: String) {
         let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         attachment.name = name

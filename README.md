@@ -14,72 +14,29 @@ The app is small on purpose, but it is a whole app: a dashboard, a board, saved 
 
 <p>
 <img src="docs/screenshots/landscape.png" width="720" alt="iPad landscape with the tab sidebar, board column and detail placeholder">
+<br>
+<sub><b>iPad landscape.</b> The tab bar becomes a sidebar, the board keeps its own column, and the detail pane shows quick picks until a flight is selected.</sub>
 </p>
 
 ## What it does
 
-**Today**
-
-- Current airport, date, and a greeting that matches the time of day
-- The next departure with a countdown, gate, and status
-- Board stats: departures still to leave, delayed flights, and moved gates
-- Saved flights as a horizontal strip, with a way back to the board when nothing is saved
-- A preview of the changes feed, and a shortcut into flight search
-
-**Board**
-
-- Departures for the selected airport, sorted by departure time
-- Search by flight number, city, airport code, or gate
-- Filters for all departures or delayed and cancelled flights only
-- Airport picker with a live count of flights per airport; the choice is remembered
-- Pull to refresh, plus an optional one-minute auto-refresh
-- When the request fails, the board falls back to the last saved snapshot, shows an error, and labels the data "Cached" with the time it was saved. It never presents old data as live
-
-**Saved**
-
-- Star a flight from the board's context menu or from its detail screen
-- Saved flights survive relaunches and are stored by flight number
-- Swipe to remove; departed flights drop off the list but stay saved
-
-**Changes**
-
-- One feed for the things that actually interrupt a trip: cancellations, gate moves, and delays
-- Sorted by severity, then departure time
-- The tab badge shows how many flights currently need attention
-
-**Flight search**
-
-- Look up a flight across every airport in the demo, not just the selected board
-- Results grouped by departure airport
-- Matches flight number, origin, destination, and gate
-
-**Flight detail**
-
-- Route header with the scheduled time kept visible and struck through when the flight is delayed
-- Banners for a moved gate and a delayed departure
-- Route progress derived from the schedule, never stored
-- Gate, terminal, aircraft, and boarding time in an adaptive grid
-- Three-step timeline, a saved-flight star in the toolbar, and live updates when the board refreshes
-- Deep link: `departures://flight/NZ%20612`
-
-**Settings**
-
-- Opened from the gear on Today, so the tab bar stays at four destinations
-- Auto-refresh on or off, and a manual refresh
-- Preferred airport, with the same picker used by the board
-- Demo controls: simulate offline, and move the gate for NZ 103
-- Saved-flight count and a clear action
-- Version and data-source notes
+- **Today** — next departure with countdown, board stats, saved flights, and a changes preview.
+- **Board** — airport switcher, search, All/Delayed filters, pull-to-refresh, optional auto-refresh.
+- **Saved** — star from the board or detail; swipe to remove; survives relaunch.
+- **Changes** — cancellations, gate moves, and delays in one feed, with a tab badge.
+- **Search** — look up any flight across every airport, grouped by origin.
+- **Flight detail** — route progress, delay and gate-change banners, gate/terminal/aircraft, timeline. Deep link: `departures://flight/NZ%20612`.
+- **Offline** — the last saved snapshot, labelled **Cached** with its timestamp; never presented as live.
+- **Settings** — auto-refresh, preferred airport, and demo controls for offline and gate changes.
 
 ## iPad
 
-- Sidebar-adaptable tab bar in iOS 18 style, which becomes a left sidebar in landscape
-- At 820 points and wider, the board stays in its own column and a flight opens beside it; an empty selection shows a placeholder with quick picks instead of a blank pane
-- Below that width, including iPad mini portrait (744 points), iPad multitasking columns and iPhone, the board collapses to a navigation stack with the detail pushed on top
-- All four iPad orientations are supported, and the app allows multitasking rather than forcing full screen
-- Type scales up at regular width, so a 13-inch iPad does not show phone-sized labels
-- Content is capped and centred on wide screens; the detail tile grid and board rows adapt to the column width
-- The selected airport is remembered between launches
+- Four tabs that become a sidebar in landscape, with Settings behind the gear on Today.
+- At 820 points and wider, the board keeps its own column and the flight opens beside it; below that, it collapses to a stack.
+- All four orientations, multitasking allowed, no forced full screen.
+- Type scales up at regular width, so a 13-inch iPad does not show phone-sized labels.
+- Content is capped and centred; board rows and detail tiles adapt to the column width.
+- The selected airport is remembered between launches.
 
 ## Architecture
 
