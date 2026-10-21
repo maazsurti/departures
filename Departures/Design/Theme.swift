@@ -58,4 +58,27 @@ extension View {
                     .stroke(Theme.stroke, lineWidth: 1)
             )
     }
+
+    /// 13-inch iPads give text more room than a phone, so the same point size
+    /// reads smaller. Scale the base size with the width class instead of
+    /// hard-coding a bigger font per screen.
+    func themeFont(
+        _ size: CGFloat,
+        weight: Font.Weight = .regular,
+        design: Font.Design = .rounded
+    ) -> some View {
+        modifier(ThemeFont(size: size, weight: weight, design: design))
+    }
+}
+
+private struct ThemeFont: ViewModifier {
+    @Environment(\.horizontalSizeClass) private var sizeClass
+
+    let size: CGFloat
+    let weight: Font.Weight
+    let design: Font.Design
+
+    func body(content: Content) -> some View {
+        content.font(.system(size: size * (sizeClass == .regular ? 1.26 : 1), weight: weight, design: design))
+    }
 }

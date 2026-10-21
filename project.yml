@@ -25,8 +25,16 @@ targets:
       properties:
         CFBundleDisplayName: Departures
         UILaunchScreen: {}
+        UIRequiresFullScreen: false
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
         CFBundleURLTypes:
           - CFBundleURLName: com.maazsurti.departures
             CFBundleURLSchemes:
@@ -34,7 +42,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.maazsurti.departures
-        TARGETED_DEVICE_FAMILY: "1"
+        TARGETED_DEVICE_FAMILY: "1,2"
 
   DeparturesTests:
     type: bundle.unit-test
@@ -48,15 +56,30 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.maazsurti.departures.tests
         GENERATE_INFOPLIST_FILE: YES
 
+  DeparturesUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: DeparturesUITests
+    dependencies:
+      - target: Departures
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.maazsurti.departures.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: Departures
+
 schemes:
   Departures:
     build:
       targets:
         Departures: all
         DeparturesTests: [test]
+        DeparturesUITests: [test]
     run:
       config: Debug
     test:
       config: Debug
       targets:
         - DeparturesTests
+        - DeparturesUITests

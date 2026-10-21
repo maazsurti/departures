@@ -3,6 +3,8 @@ import SwiftUI
 struct FlightDetailView: View {
     let flight: Flight
 
+    @Environment(SavedFlights.self) private var saved
+
     private var timeText: String {
         flight.displayTime.formatted(date: .omitted, time: .shortened)
     }
@@ -26,12 +28,28 @@ struct FlightDetailView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 8)
                 .padding(.bottom, 40)
+                .frame(maxWidth: 720)
+                .frame(maxWidth: .infinity)
             }
             .scrollIndicators(.hidden)
         }
+        .navigationTitle(flight.number)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
         .toolbarBackground(.hidden, for: .navigationBar)
+        .accessibilityIdentifier("flight-detail")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    saved.toggle(flight.number)
+                } label: {
+                    Image(systemName: saved.contains(flight.number) ? "star.fill" : "star")
+                }
+                .tint(saved.contains(flight.number) ? Theme.amber : Theme.secondary)
+                .accessibilityIdentifier("save-flight")
+                .accessibilityLabel(saved.contains(flight.number) ? "Remove from saved" : "Save flight")
+            }
+        }
         .preferredColorScheme(.dark)
     }
 
@@ -41,7 +59,7 @@ struct FlightDetailView: View {
         VStack(spacing: 12) {
             HStack {
                 Text(flight.number)
-                    .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                    .themeFont(13, weight: .semibold, design: .monospaced)
                     .foregroundStyle(Theme.secondary)
                 Spacer()
                 StatusPill(status: flight.status)
@@ -51,7 +69,7 @@ struct FlightDetailView: View {
                 airportColumn(code: flight.origin.code, city: flight.origin.city, alignment: .leading)
                 Spacer()
                 Image(systemName: "airplane")
-                    .font(.system(size: 17, weight: .semibold))
+                    .themeFont(17, weight: .semibold, design: .default)
                     .foregroundStyle(Theme.teal)
                     .rotationEffect(.degrees(90))
                     .accessibilityHidden(true)
@@ -63,16 +81,16 @@ struct FlightDetailView: View {
                 if flight.delayMinutes > 0 {
                     Text(scheduledText)
                         .strikethrough(color: Theme.secondary)
-                        .font(.system(size: 13, design: .rounded))
+                        .themeFont(13, design: .rounded)
                         .foregroundStyle(Theme.secondary)
                     Text("→")
                         .foregroundStyle(Theme.secondary.opacity(0.6))
                     Text(timeText)
-                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .themeFont(15, weight: .bold, design: .rounded)
                         .foregroundStyle(Theme.amber)
                 } else {
                     Text(timeText)
-                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .themeFont(15, weight: .bold, design: .rounded)
                         .foregroundStyle(Theme.primary)
                 }
             }
@@ -82,10 +100,10 @@ struct FlightDetailView: View {
     private func airportColumn(code: String, city: String, alignment: HorizontalAlignment) -> some View {
         VStack(alignment: alignment, spacing: 4) {
             Text(code)
-                .font(.system(size: 42, weight: .heavy, design: .rounded))
+                .themeFont(42, weight: .heavy, design: .rounded)
                 .foregroundStyle(Theme.primary)
             Text(city)
-                .font(.system(size: 13, design: .rounded))
+                .themeFont(13, design: .rounded)
                 .foregroundStyle(Theme.secondary)
         }
         .accessibilityElement(children: .combine)
@@ -119,16 +137,16 @@ struct FlightDetailView: View {
     private func changeRow(icon: String, title: String, detail: String) -> some View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: icon)
-                .font(.system(size: 13, weight: .semibold))
+                .themeFont(13, weight: .semibold, design: .default)
                 .foregroundStyle(Theme.amber)
                 .frame(width: 16)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .themeFont(13, weight: .bold, design: .rounded)
                     .foregroundStyle(Theme.primary)
                 Text(detail)
-                    .font(.system(size: 12, design: .rounded))
+                    .themeFont(12, design: .rounded)
                     .foregroundStyle(Theme.secondary)
             }
 
@@ -143,11 +161,11 @@ struct FlightDetailView: View {
 
             HStack {
                 Text(flight.status == .departed ? "In the air" : "On the ground")
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .themeFont(12, weight: .semibold, design: .rounded)
                     .foregroundStyle(Theme.secondary)
                 Spacer()
                 Text("\(Int(flight.progress * 100))% of route")
-                    .font(.system(size: 12, design: .rounded))
+                    .themeFont(12, design: .rounded)
                     .monospacedDigit()
                     .foregroundStyle(Theme.secondary)
             }
@@ -159,15 +177,11 @@ struct FlightDetailView: View {
     }
 
     private var detailsGrid: some View {
-        VStack(spacing: 12) {
-            HStack(spacing: 12) {
-                detailTile(title: "Gate", value: flight.gate, icon: "door.left.hand.open")
-                detailTile(title: "Terminal", value: flight.terminal, icon: "building.2")
-            }
-            HStack(spacing: 12) {
-                detailTile(title: "Aircraft", value: flight.aircraft, icon: "airplane")
-                detailTile(title: "Boarding", value: boardingWindow, icon: "clock")
-            }
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
+            detailTile(title: "Gate", value: flight.gate, icon: "door.left.hand.open")
+            detailTile(title: "Terminal", value: flight.terminal, icon: "building.2")
+            detailTile(title: "Aircraft", value: flight.aircraft, icon: "airplane")
+            detailTile(title: "Boarding", value: boardingWindow, icon: "clock")
         }
     }
 
@@ -180,15 +194,15 @@ struct FlightDetailView: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 5) {
                 Image(systemName: icon)
-                    .font(.system(size: 10, weight: .semibold))
+                    .themeFont(10, weight: .semibold, design: .default)
                 Text(title.uppercased())
-                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .themeFont(10, weight: .bold, design: .rounded)
                     .tracking(0.9)
             }
             .foregroundStyle(Theme.secondary)
 
             Text(value)
-                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                .themeFont(16, weight: .semibold, design: .rounded)
                 .foregroundStyle(Theme.primary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
@@ -233,10 +247,10 @@ struct FlightDetailView: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .themeFont(14, weight: .semibold, design: .rounded)
                     .foregroundStyle(isDone ? Theme.primary : Theme.secondary)
                 Text(detail)
-                    .font(.system(size: 12, design: .rounded))
+                    .themeFont(12, design: .rounded)
                     .foregroundStyle(Theme.secondary)
             }
             .padding(.bottom, isLast ? 0 : 20)
@@ -250,4 +264,5 @@ struct FlightDetailView: View {
     NavigationStack {
         FlightDetailView(flight: PreviewData.flights[1])
     }
+    .environment(SavedFlights())
 }

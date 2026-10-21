@@ -11,7 +11,7 @@ struct StatusPill: View {
                 .fill(color)
                 .frame(width: 6, height: 6)
             Text(status.label.uppercased())
-                .font(.system(size: 10, weight: .bold, design: .rounded))
+                .themeFont(10, weight: .bold, design: .rounded)
                 .tracking(0.8)
         }
         .foregroundStyle(color)
@@ -28,7 +28,7 @@ struct AirlineMark: View {
 
     var body: some View {
         Text(airline.code)
-            .font(.system(size: 11, weight: .heavy, design: .rounded))
+            .themeFont(11, weight: .heavy, design: .rounded)
             .foregroundStyle(Color(hexString: airline.tint))
             .frame(width: 30, height: 30)
             .background(Color(hexString: airline.tint).opacity(0.14), in: .rect(cornerRadius: 9))

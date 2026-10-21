@@ -18,11 +18,81 @@ final class BoardViewModel {
     var errorMessage: String?
     var filter: Filter = .departures
     var query = ""
+    var airport: Airport {
+        didSet { defaults.set(airport.code, forKey: Self.airportKey) }
+    }
 
+    private static let airportKey = "selectedAirport"
     private let repository: FlightRepository
+    private let defaults: UserDefaults
 
-    init(repository: FlightRepository = DemoFlightService()) {
+    init(
+        repository: FlightRepository = DemoFlightService(),
+        airport: Airport = .akl,
+        defaults: UserDefaults = .standard
+    ) {
         self.repository = repository
+        self.defaults = defaults
+        self.airport = Airport.all.first { $0.code == defaults.string(forKey: Self.airportKey) } ?? airport
+    }
+
+    /// Flights that changed after they were first shown: delays, cancellations
+    /// and moved gates. Not tied to the selected airport, because a gate change
+    /// still matters after the traveller switches boards.
+    var attentionFlights: [Flight] {
+        flights
+            .filter { $0.status != .departed && ($0.status.isUrgent || $0.gateChanged) }
+            .sorted { lhs, rhs in
+                if lhs.status != rhs.status {
+                    return severity(lhs.status) < severity(rhs.status)
+                }
+                return lhs.displayTime < rhs.displayTime
+            }
+    }
+
+    var attentionCount: Int { attentionFlights.count }
+
+    /// The soonest flight still on the ground at the selected airport.
+    var nextDeparture: Flight? {
+        upcomingDepartures.first
+    }
+
+    var upcomingDepartures: [Flight] {
+        flights
+            .filter { $0.origin == airport && $0.status != .departed }
+            .sorted { $0.displayTime < $1.displayTime }
+    }
+
+    func boardStats(for airport: Airport) -> (departures: Int, delayed: Int, gates: Int) {
+        let scoped = flights.filter { $0.origin == airport && $0.status != .departed }
+        return (
+            departures: scoped.count,
+            delayed: scoped.filter(\.status.isUrgent).count,
+            gates: scoped.filter(\.gateChanged).count
+        )
+    }
+
+    private func severity(_ status: FlightStatus) -> Int {
+        switch status {
+        case .cancelled: 0
+        case .delayed: 1
+        default: 2
+        }
+    }
+
+    /// Airports the demo board actually has departures for. Derived from the
+    /// data so the picker cannot offer an empty board.
+    var airports: [Airport] {
+        let codes = Set(flights.map(\.origin))
+        return codes.sorted { $0.code < $1.code }
+    }
+
+    func departureCount(for airport: Airport) -> Int {
+        flights.filter { $0.origin == airport && $0.status != .departed }.count
+    }
+
+    func flight(withID id: Flight.ID) -> Flight? {
+        flights.first { $0.id == id }
     }
 
     /// Filtering lives here rather than in the view so it can be tested without
@@ -30,21 +100,26 @@ final class BoardViewModel {
     /// type "queenstown" at a gate, not "Queenstown".
     var visibleFlights: [Flight] {
         let filtered = flights.filter { flight in
+            guard flight.origin == airport else { return false }
             switch filter {
             case .departures:
-                flight.status != .departed
+                return flight.status != .departed
             case .delayed:
-                flight.status.isUrgent
+                return flight.status.isUrgent
             }
         }
 
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return filtered }
-
-        return filtered.filter { flight in
-            [flight.number, flight.destination.city, flight.destination.code, flight.gate]
-                .contains { $0.localizedCaseInsensitiveContains(trimmed) }
+        guard !trimmed.isEmpty else {
+            return filtered.sorted { $0.displayTime < $1.displayTime }
         }
+
+        return filtered
+            .filter { flight in
+                [flight.number, flight.destination.city, flight.destination.code, flight.gate]
+                    .contains { $0.localizedCaseInsensitiveContains(trimmed) }
+            }
+            .sorted { $0.displayTime < $1.displayTime }
     }
 
     func load() async {

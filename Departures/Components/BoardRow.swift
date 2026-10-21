@@ -18,12 +18,12 @@ struct BoardRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
                     Text(flight.number)
-                        .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                        .themeFont(13, weight: .semibold, design: .monospaced)
                         .foregroundStyle(Theme.secondary)
 
                     if flight.delayMinutes > 0 {
                         Text("+\(flight.delayMinutes)m")
-                            .font(.system(size: 10, weight: .bold, design: .rounded))
+                            .themeFont(10, weight: .bold, design: .rounded)
                             .foregroundStyle(Theme.amber)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
@@ -32,17 +32,17 @@ struct BoardRow: View {
                 }
 
                 Text(flight.destination.city)
-                    .font(.system(size: 19, weight: .semibold, design: .rounded))
+                    .themeFont(19, weight: .semibold, design: .rounded)
                     .foregroundStyle(Theme.primary)
 
                 HStack(spacing: 6) {
                     Text("Gate \(flight.gate) · \(flight.terminal)")
-                        .font(.system(size: 12, weight: .regular, design: .rounded))
+                        .themeFont(12, weight: .regular, design: .rounded)
                         .foregroundStyle(Theme.secondary)
 
                     if let previous = flight.previousGate {
                         Text("was \(previous)")
-                            .font(.system(size: 11, weight: .semibold, design: .rounded))
+                            .themeFont(11, weight: .semibold, design: .rounded)
                             .foregroundStyle(Theme.amber)
                     }
                 }
@@ -52,7 +52,7 @@ struct BoardRow: View {
 
             VStack(alignment: .trailing, spacing: 8) {
                 Text(timeText)
-                    .font(.system(size: 22, weight: .semibold, design: .rounded))
+                    .themeFont(22, weight: .semibold, design: .rounded)
                     .monospacedDigit()
                     .foregroundStyle(Theme.primary)
                     .contentTransition(.numericText())

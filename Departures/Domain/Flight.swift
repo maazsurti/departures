@@ -2,10 +2,12 @@ import Foundation
 
 // MARK: - Domain
 
-struct Airport: Codable, Hashable, Sendable {
+struct Airport: Codable, Hashable, Identifiable, Sendable {
     let code: String
     let city: String
     let name: String
+
+    var id: String { code }
 
     static let akl = Airport(code: "AKL", city: "Auckland", name: "Auckland Airport")
     static let syd = Airport(code: "SYD", city: "Sydney", name: "Kingsford Smith")
@@ -15,6 +17,8 @@ struct Airport: Codable, Hashable, Sendable {
     static let mel = Airport(code: "MEL", city: "Melbourne", name: "Tullamarine")
     static let nrt = Airport(code: "NRT", city: "Tokyo", name: "Narita")
     static let sin = Airport(code: "SIN", city: "Singapore", name: "Changi")
+
+    static let all: [Airport] = [.akl, .wlg, .chc, .zqn, .syd, .mel, .nrt, .sin]
 }
 
 struct Airline: Codable, Hashable, Sendable {

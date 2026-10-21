@@ -4,8 +4,6 @@ A SwiftUI departure board for Auckland Airport, built around the parts of a trav
 
 The app is small on purpose, but it is a whole app: a dashboard, a board, saved flights, a changes feed, cross-airport search, flight detail, and settings. On iPad the board and the flight detail sit side by side instead of one covering the other.
 
-> Screenshot files below are placeholders until the capture pass runs.
-
 | Today | Board (iPad split) | Flight detail |
 | --- | --- | --- |
 | <img src="docs/screenshots/today.png" width="220"> | <img src="docs/screenshots/board-ipad.png" width="360"> | <img src="docs/screenshots/detail-ipad.png" width="360"> |
@@ -13,6 +11,10 @@ The app is small on purpose, but it is a whole app: a dashboard, a board, saved 
 | Saved | Changes | Offline, cached |
 | --- | --- | --- |
 | <img src="docs/screenshots/saved.png" width="220"> | <img src="docs/screenshots/changes.png" width="220"> | <img src="docs/screenshots/offline.png" width="220"> |
+
+<p>
+<img src="docs/screenshots/landscape.png" width="720" alt="iPad landscape with the tab sidebar, board column and detail placeholder">
+</p>
 
 ## What it does
 
@@ -62,17 +64,20 @@ The app is small on purpose, but it is a whole app: a dashboard, a board, saved 
 
 **Settings**
 
+- Opened from the gear on Today, so the tab bar stays at four destinations
 - Auto-refresh on or off, and a manual refresh
+- Preferred airport, with the same picker used by the board
 - Demo controls: simulate offline, and move the gate for NZ 103
 - Saved-flight count and a clear action
 - Version and data-source notes
 
 ## iPad
 
-- Sidebar-adaptable tab bar in iOS 18 style
-- At regular width the board stays in its own column and a flight opens beside it; an empty selection shows a placeholder instead of a blank pane
-- At compact width, including iPad multitasking columns and iPhone, the board collapses to a navigation stack with the detail pushed on top
+- Sidebar-adaptable tab bar in iOS 18 style, which becomes a left sidebar in landscape
+- At 820 points and wider, the board stays in its own column and a flight opens beside it; an empty selection shows a placeholder with quick picks instead of a blank pane
+- Below that width, including iPad mini portrait (744 points), iPad multitasking columns and iPhone, the board collapses to a navigation stack with the detail pushed on top
 - All four iPad orientations are supported, and the app allows multitasking rather than forcing full screen
+- Type scales up at regular width, so a 13-inch iPad does not show phone-sized labels
 - Content is capped and centred on wide screens; the detail tile grid and board rows adapt to the column width
 - The selected airport is remembered between launches
 
@@ -92,7 +97,7 @@ Departures/
   Domain/         Flight, Airport, Airline, FlightStatus
   Data/           FlightRepository, DemoFlightService (actor, disk snapshot)
   Design/         palette, gradients, card surface
-  Components/     StatusPill, AirlineMark, BoardRow, ChangeRow, FlightArc
+  Components/     StatusPill, AirlineMark, BoardRow, SavedFlightCard, ChangeRow, FlightArc
   Features/
     Root/         RootView, Router
     Today/        TodayView
@@ -137,7 +142,7 @@ xcodebuild test \
 
 ## Tests
 
-Unit tests cover:
+Eleven unit tests cover:
 
 - filter behaviour, including cancelled flights under "Delayed"
 - search across flight number, city, and gate, case-insensitively
@@ -147,15 +152,25 @@ Unit tests cover:
 - gate change detection on the model
 - delay arithmetic and route progress
 
-UI tests walk the app end to end on iPad: board to detail, saved flights, the changes feed, the settings demo controls, and the offline fallback. iPad layout is checked at regular width (split board and detail) and after rotation.
+Two UI tests walk the app end to end: Today, the airport picker, a flight detail, starring and the Saved list, the Changes feed, the Settings demo controls, the offline fallback with its cached badge, cross-airport search, and rotation.
+
+The suite was run on iPhone 17 Pro and on every iPad width the layout branches on:
+
+| Device | Width | Layout |
+| --- | --- | --- |
+| iPad Pro 13-inch | 1032 pt | split |
+| iPad Air 11-inch | 834 pt | split |
+| iPad (A16) | 820 pt | split |
+| iPad mini (A17 Pro) | 744 pt | stack |
+| iPhone 17 Pro | 402 pt | stack |
 
 ## Decisions
 
 **Progress is computed, not stored.** A cached flight is a claim about the past. Deriving progress from the schedule means the worst case is an out-of-date percentage, not a false one.
 
-**Stale data says so.** The offline snapshot is useful, but only if the UI admits what it is. The footer switches from "Live" to "Cached" and keeps the timestamp.
+**Stale data says so.** The offline snapshot is useful, but only if the UI admits what it is. The header switches to a "Cached" badge and the footer keeps the timestamp.
 
-**One board, two layouts.** `NavigationSplitView` at regular width and a stack at compact width share the same `BoardListView`, so iPad does not get a separate feature branch of the board.
+**One board, two layouts.** `NavigationSplitView` at 820 points and wider, and a stack below it, share the same `BoardListView`, so iPad does not get a separate feature branch of the board. The width check also handles iPad multitasking columns without a second size-class rule.
 
 **Selection is an ID, not a snapshot.** The split view remembers the flight's identifier, and the detail column re-resolves it from the latest board. A gate change that lands while the detail is open shows up without re-tapping.
 
@@ -163,7 +178,7 @@ UI tests walk the app end to end on iPad: board to detail, saved flights, the ch
 
 **No dependency injection framework.** One protocol and one initialiser parameter. The tests inject a stub in three lines.
 
-**Screenshots come from a DEBUG launch hook.** `OPEN_FLIGHT` opens a flight directly so captures do not depend on tapping coordinates. It is compiled out of release builds.
+**Screenshots come from the UI test run.** The flow test attaches a capture at each screen, and the DEBUG hooks (`OPEN_TAB`, `OPEN_FLIGHT`) open a screen or flight directly for manual captures. Both are compiled out of release builds.
 
 ## Limitations
 
