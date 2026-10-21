@@ -39,6 +39,15 @@ struct RootView: View {
         .environment(saved)
         .environment(router)
         .preferredColorScheme(.dark)
+        .onOpenURL { url in
+            guard
+                url.scheme == "departures",
+                url.host == "flight",
+                let number = url.pathComponents.dropFirst().first?.removingPercentEncoding
+            else { return }
+            router.deepLinkedFlight = number
+            router.tab = .board
+        }
         .task {
             #if DEBUG
             if let raw = ProcessInfo.processInfo.environment["OPEN_TAB"],

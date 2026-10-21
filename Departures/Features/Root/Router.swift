@@ -14,4 +14,6 @@ final class Router {
     }
 
     var tab: Tab = .today
+    /// Set by an incoming `departures://flight/...` link and consumed by the board.
+    var deepLinkedFlight: String?
 }

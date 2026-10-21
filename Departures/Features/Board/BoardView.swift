@@ -5,6 +5,7 @@ import SwiftUI
 /// collapses to the same navigation stack the phone had.
 struct BoardView: View {
     @Environment(BoardViewModel.self) private var model
+    @Environment(Router.self) private var router
 
     @State private var selection: Flight.ID?
     @State private var path = NavigationPath()
@@ -50,6 +51,7 @@ struct BoardView: View {
         .task {
             await model.load()
             openPendingFlight()
+            handleDeepLink()
             #if DEBUG
             // Screenshot/QA hook: open straight to a flight without tapping.
             if let number = ProcessInfo.processInfo.environment["OPEN_FLIGHT"] {
@@ -57,13 +59,8 @@ struct BoardView: View {
             }
             #endif
         }
-        .onOpenURL { url in
-            guard
-                url.scheme == "departures",
-                url.host == "flight",
-                let number = url.pathComponents.dropFirst().first?.removingPercentEncoding
-            else { return }
-            show(number: number)
+        .onChange(of: router.deepLinkedFlight) { _, _ in
+            handleDeepLink()
         }
     }
 
@@ -74,11 +71,16 @@ struct BoardView: View {
             pendingNumber = number
             return
         }
-        if usesSplitView {
-            selection = flight.id
-        } else {
+        selection = flight.id
+        if !usesSplitView {
             path.append(flight)
         }
+    }
+
+    private func handleDeepLink() {
+        guard let number = router.deepLinkedFlight else { return }
+        router.deepLinkedFlight = nil
+        show(number: number)
     }
 
     private func openPendingFlight() {
@@ -92,4 +94,5 @@ struct BoardView: View {
     BoardView()
         .environment(BoardViewModel())
         .environment(SavedFlights())
+        .environment(Router())
 }

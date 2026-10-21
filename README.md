@@ -152,7 +152,7 @@ Eleven unit tests cover:
 - gate change detection on the model
 - delay arithmetic and route progress
 
-Two UI tests walk the app end to end: Today, the airport picker, a flight detail, starring and the Saved list, the Changes feed, the Settings demo controls, the offline fallback with its cached badge, cross-airport search, and rotation.
+Three UI tests walk the app end to end: Today, the airport picker, a flight detail, starring and the Saved list, the Changes feed, the Settings demo controls, the offline fallback with its cached badge, cross-airport search, rotation, and the `departures://flight/NZ%20612` deep link.
 
 The suite was run on iPhone 17 Pro and on every iPad width the layout branches on:
 
@@ -175,6 +175,8 @@ The suite was run on iPhone 17 Pro and on every iPad width the layout branches o
 **Selection is an ID, not a snapshot.** The split view remembers the flight's identifier, and the detail column re-resolves it from the latest board. A gate change that lands while the detail is open shows up without re-tapping.
 
 **Attention is derived.** The badge, the Changes feed, and the dashboard stats all read the same computed list, so they cannot disagree.
+
+**Deep links are routed at the app root.** The URL is parsed once, then handed to the board through the router. Handling it inside the Board tab meant a link opened while Today was showing did nothing, because the board never received the event.
 
 **No dependency injection framework.** One protocol and one initialiser parameter. The tests inject a stub in three lines.
 

@@ -121,6 +121,25 @@ final class AppFlowUITests: XCTestCase {
         capture("search")
     }
 
+    // MARK: - Deep link
+
+    func testDeepLinkOpensFlight() throws {
+        XCTAssertTrue(app.staticTexts["Auckland"].waitForExistence(timeout: 15))
+
+        XCUIDevice.shared.system.open(URL(string: "departures://flight/NZ%20612")!)
+
+        // iOS may ask for confirmation before handing the URL to the app.
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        for candidate in [app.buttons["Open"], springboard.buttons["Open"]] where candidate.waitForExistence(timeout: 2) {
+            candidate.tap()
+            break
+        }
+
+        XCTAssertTrue(app.navigationBars["NZ 612"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["Queenstown"].firstMatch.exists)
+        capture("deep-link")
+    }
+
     // MARK: - Rotation
 
     func testRotationKeepsContent() throws {
