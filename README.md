@@ -1,28 +1,89 @@
 # Departures
 
-A SwiftUI departure board for Auckland Airport. I built it around the part of a mobile app that usually gets the least attention: the loading state, the failed request, the stale snapshot, the delayed flight, and the gate that moves while you are walking to it.
+A SwiftUI departure board for Auckland Airport, built around the parts of a travel app that usually get the least attention: the loading state, the failed request, the stale snapshot, the delayed flight, and the gate that moves while you are walking to it.
 
-| Board | Delayed, gate changed | In the air | Offline, cached |
-| --- | --- | --- | --- |
-| <img src="docs/screenshots/board.png" width="200"> | <img src="docs/screenshots/detail-delayed.png" width="200"> | <img src="docs/screenshots/detail-inflight.png" width="200"> | <img src="docs/screenshots/cached-offline.png" width="200"> |
+The app is small on purpose, but it is a whole app: a dashboard, a board, saved flights, a changes feed, cross-airport search, flight detail, and settings. On iPad the board and the flight detail sit side by side instead of one covering the other.
+
+> Screenshot files below are placeholders until the capture pass runs.
+
+| Today | Board (iPad split) | Flight detail |
+| --- | --- | --- |
+| <img src="docs/screenshots/today.png" width="220"> | <img src="docs/screenshots/board-ipad.png" width="360"> | <img src="docs/screenshots/detail-ipad.png" width="360"> |
+
+| Saved | Changes | Offline, cached |
+| --- | --- | --- |
+| <img src="docs/screenshots/saved.png" width="220"> | <img src="docs/screenshots/changes.png" width="220"> | <img src="docs/screenshots/offline.png" width="220"> |
 
 ## What it does
 
-- Departure board with search by flight number, city, or gate
-- Filters for all departures or delayed flights only
-- Flight detail with route progress, gate, terminal, aircraft, boarding time, and a three-step timeline
-- Delayed flights keep the scheduled time visible, struck through, next to the new one
-- A changed gate shows the new gate, the old one, and a banner on the detail screen
+**Today**
+
+- Current airport, date, and a greeting that matches the time of day
+- The next departure with a countdown, gate, and status
+- Board stats: departures still to leave, delayed flights, and moved gates
+- Saved flights as a horizontal strip, with a way back to the board when nothing is saved
+- A preview of the changes feed, and a shortcut into flight search
+
+**Board**
+
+- Departures for the selected airport, sorted by departure time
+- Search by flight number, city, airport code, or gate
+- Filters for all departures or delayed and cancelled flights only
+- Airport picker with a live count of flights per airport; the choice is remembered
+- Pull to refresh, plus an optional one-minute auto-refresh
 - When the request fails, the board falls back to the last saved snapshot, shows an error, and labels the data "Cached" with the time it was saved. It never presents old data as live
+
+**Saved**
+
+- Star a flight from the board's context menu or from its detail screen
+- Saved flights survive relaunches and are stored by flight number
+- Swipe to remove; departed flights drop off the list but stay saved
+
+**Changes**
+
+- One feed for the things that actually interrupt a trip: cancellations, gate moves, and delays
+- Sorted by severity, then departure time
+- The tab badge shows how many flights currently need attention
+
+**Flight search**
+
+- Look up a flight across every airport in the demo, not just the selected board
+- Results grouped by departure airport
+- Matches flight number, origin, destination, and gate
+
+**Flight detail**
+
+- Route header with the scheduled time kept visible and struck through when the flight is delayed
+- Banners for a moved gate and a delayed departure
+- Route progress derived from the schedule, never stored
+- Gate, terminal, aircraft, and boarding time in an adaptive grid
+- Three-step timeline, a saved-flight star in the toolbar, and live updates when the board refreshes
 - Deep link: `departures://flight/NZ%20612`
+
+**Settings**
+
+- Auto-refresh on or off, and a manual refresh
+- Demo controls: simulate offline, and move the gate for NZ 103
+- Saved-flight count and a clear action
+- Version and data-source notes
+
+## iPad
+
+- Sidebar-adaptable tab bar in iOS 18 style
+- At regular width the board stays in its own column and a flight opens beside it; an empty selection shows a placeholder instead of a blank pane
+- At compact width, including iPad multitasking columns and iPhone, the board collapses to a navigation stack with the detail pushed on top
+- All four iPad orientations are supported, and the app allows multitasking rather than forcing full screen
+- Content is capped and centred on wide screens; the detail tile grid and board rows adapt to the column width
+- The selected airport is remembered between launches
 
 ## Architecture
 
 - SwiftUI with `@Observable` view models, Swift 6 language mode, strict concurrency
 - `FlightRepository` protocol in front of the data source, so the view model has no idea whether data comes from a network or a stub
-- `DemoFlightService` is an actor with an artificial 450 ms delay, and writes a JSON snapshot to the caches directory
-- `SIMULATE_OFFLINE=1` forces the request to fail so the cached path can be exercised without turning off Wi-Fi
-- Delay in minutes, status labels, and route progress are derived from the model rather than stored, so a stale snapshot cannot claim an aircraft is further along than it is
+- `DemoFlightService` is an actor with an artificial 450 ms delay, a disk snapshot, and explicit demo controls for offline and gate changes
+- One service instance is shared by the whole app, so Settings acts on the board the traveller is looking at
+- `Router` owns tab selection so dashboard actions can hand off to the right section
+- Delay in minutes, status labels, route progress, attention count, and change summaries are derived from the model rather than stored, so a stale snapshot cannot claim an aircraft is further along than it is
 - No third-party dependencies
 
 ```
@@ -31,11 +92,19 @@ Departures/
   Domain/         Flight, Airport, Airline, FlightStatus
   Data/           FlightRepository, DemoFlightService (actor, disk snapshot)
   Design/         palette, gradients, card surface
-  Components/     StatusPill, AirlineMark, BoardRow, FlightArc
+  Components/     StatusPill, AirlineMark, BoardRow, ChangeRow, FlightArc
   Features/
-    Board/        BoardView, BoardViewModel
-    Detail/       FlightDetailView
+    Root/         RootView, Router
+    Today/        TodayView
+    Board/        BoardView, BoardListView, BoardViewModel
+    Detail/       FlightDetailView, FlightDetailPlaceholder
+    Search/       FlightSearchView
+    Airports/     AirportsView
+    Saved/        SavedFlights, SavedFlightsView
+    Changes/      ChangesView
+    Settings/     SettingsView
 DeparturesTests/  Swift Testing suites
+DeparturesUITests/ end-to-end flows on iPhone and iPad
 ```
 
 ## Running it
@@ -48,7 +117,7 @@ xcodegen generate
 open Departures.xcodeproj
 ```
 
-Tests:
+Tests, iPhone:
 
 ```sh
 xcodebuild test \
@@ -57,9 +126,18 @@ xcodebuild test \
   -destination 'platform=iOS Simulator,name=iPhone 16'
 ```
 
+Tests, iPad:
+
+```sh
+xcodebuild test \
+  -project Departures.xcodeproj \
+  -scheme Departures \
+  -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M4)'
+```
+
 ## Tests
 
-Eleven tests in two suites, covering:
+Unit tests cover:
 
 - filter behaviour, including cancelled flights under "Delayed"
 - search across flight number, city, and gate, case-insensitively
@@ -69,11 +147,19 @@ Eleven tests in two suites, covering:
 - gate change detection on the model
 - delay arithmetic and route progress
 
+UI tests walk the app end to end on iPad: board to detail, saved flights, the changes feed, the settings demo controls, and the offline fallback. iPad layout is checked at regular width (split board and detail) and after rotation.
+
 ## Decisions
 
 **Progress is computed, not stored.** A cached flight is a claim about the past. Deriving progress from the schedule means the worst case is an out-of-date percentage, not a false one.
 
 **Stale data says so.** The offline snapshot is useful, but only if the UI admits what it is. The footer switches from "Live" to "Cached" and keeps the timestamp.
+
+**One board, two layouts.** `NavigationSplitView` at regular width and a stack at compact width share the same `BoardListView`, so iPad does not get a separate feature branch of the board.
+
+**Selection is an ID, not a snapshot.** The split view remembers the flight's identifier, and the detail column re-resolves it from the latest board. A gate change that lands while the detail is open shows up without re-tapping.
+
+**Attention is derived.** The badge, the Changes feed, and the dashboard stats all read the same computed list, so they cannot disagree.
 
 **No dependency injection framework.** One protocol and one initialiser parameter. The tests inject a stub in three lines.
 
@@ -82,5 +168,5 @@ Eleven tests in two suites, covering:
 ## Limitations
 
 - Demo data only. There is no live API, and the flight list is fixed apart from relative times.
-- The gate change is fixed in the fixture. There is no control in the UI to trigger one live.
-- No app icon, localisation, or accessibility audit beyond labels on the board rows.
+- The gate change is fixed to one fixture and triggered from Settings. There is no live push notification.
+- No app icon, localisation, or accessibility audit beyond labels on the board and change rows.
